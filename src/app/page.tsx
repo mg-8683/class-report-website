@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
   AppData,
   StudentEvaluation,
@@ -230,31 +230,15 @@ export default function ClassReportPage() {
 
   const activeLesson = data.lessons.find((l) => l.id === data.activeLessonId) || data.lessons[0];
 
-  // 确保所有学员在当前课时都有评价记录
-  const ensureEvaluations = useCallback(
-    (lesson: LessonData): LessonData => {
-      const evaluations = { ...lesson.evaluations };
-      let changed = false;
-      for (const student of data.students) {
-        if (!evaluations[student.id]) {
-          evaluations[student.id] = createStudentEvaluation(student.id);
-          changed = true;
-        }
-      }
-      // 删除已不在学员列表中的评价
-      const studentIds = new Set(data.students.map((s) => s.id));
-      for (const key of Object.keys(evaluations)) {
-        if (!studentIds.has(key)) {
-          delete evaluations[key];
-          changed = true;
-        }
-      }
-      return changed ? { ...lesson, evaluations } : lesson;
-    },
-    [data.students]
-  );
-
-  const currentLesson = activeLesson ? ensureEvaluations(activeLesson) : null;
+  // 确保所有学员在当前课时都有评价记录（使用 useMemo 避免每次渲染重新创建）
+  const currentLesson = useMemo(() => {
+    if (!activeLesson) return null;
+    const evaluations: Record<string, StudentEvaluation> = {};
+    for (const student of data.students) {
+      evaluations[student.id] = activeLesson.evaluations[student.id] || createStudentEvaluation(student.id);
+    }
+    return { ...activeLesson, evaluations };
+  }, [activeLesson, data.students]);
 
   // 更新评价
   const updateEvaluation = (studentId: string, field: keyof StudentEvaluation, value: string) => {
@@ -351,18 +335,44 @@ export default function ClassReportPage() {
 
   // 复制学员行（复制评价到剪贴板）
   const copyStudentRow = (studentId: string) => {
-    const eval_ = currentLesson?.evaluations[studentId];
-    if (!eval_) return;
+    if (!currentLesson) return;
+    const eval_ = currentLesson.evaluations[studentId];
     const student = data.students.find((s) => s.id === studentId);
     if (!student) return;
 
-    const summary = currentLesson.contentSummary
-      ? `\n【阶段教学内容概要】\n${currentLesson.contentSummary}`
-      : '';
+    // 构建完整的反馈文本，包含课时概要和所有评价字段
+    const lines: string[] = [];
+    lines.push(`${data.courseName} - ${currentLesson.name} 学员反馈`);
+    lines.push('');
 
-    const text = `${data.courseName} - ${currentLesson.name} 学员反馈\n\n【${student.name}】\n基础能力反馈：${eval_.ability}\n笔记：${eval_.notes}\n专注度：${eval_.focus}\n逻辑力：${eval_.logic}\n理解力：${eval_.comprehension}\n上课互动答题情况：${eval_.interaction || '暂无'}${summary}`;
+    // 阶段教学内容概要
+    if (currentLesson.contentSummary) {
+      lines.push('【阶段教学内容概要】');
+      lines.push(currentLesson.contentSummary);
+      lines.push('');
+    }
+
+    // 学员评价
+    lines.push(`【${student.name}】`);
+    lines.push(`基础能力反馈：${eval_?.ability || '未填写'}`);
+    lines.push(`笔记：${eval_?.notes || '未填写'}`);
+    lines.push(`专注度：${eval_?.focus || '未填写'}`);
+    lines.push(`逻辑力：${eval_?.logic || '未填写'}`);
+    lines.push(`理解力：${eval_?.comprehension || '未填写'}`);
+    lines.push(`上课互动答题情况：${eval_?.interaction || '暂无'}`);
+
+    const text = lines.join('\n');
 
     navigator.clipboard.writeText(text).then(() => {
+      alert('已复制到剪贴板，可直接粘贴到微信发送');
+    }).catch(() => {
+      // 降级方案：使用 execCommand
+      const textarea = document.createElement('textarea');
+      textarea.value = text;
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textarea);
       alert('已复制到剪贴板，可直接粘贴到微信发送');
     });
   };
