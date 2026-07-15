@@ -355,9 +355,15 @@ export default function ClassReportPage() {
     if (!eval_) return;
     const student = data.students.find((s) => s.id === studentId);
     if (!student) return;
-    const text = `${student.name}\n基础能力: ${eval_.ability}\n笔记: ${eval_.notes}\n专注度: ${eval_.focus}\n逻辑力: ${eval_.logic}\n理解力: ${eval_.comprehension}\n互动情况: ${eval_.interaction}`;
+
+    const summary = currentLesson.contentSummary
+      ? `\n【阶段教学内容概要】\n${currentLesson.contentSummary}`
+      : '';
+
+    const text = `${data.courseName} - ${currentLesson.name} 学员反馈\n\n【${student.name}】\n基础能力反馈：${eval_.ability}\n笔记：${eval_.notes}\n专注度：${eval_.focus}\n逻辑力：${eval_.logic}\n理解力：${eval_.comprehension}\n上课互动答题情况：${eval_.interaction || '暂无'}${summary}`;
+
     navigator.clipboard.writeText(text).then(() => {
-      alert('已复制到剪贴板');
+      alert('已复制到剪贴板，可直接粘贴到微信发送');
     });
   };
 
