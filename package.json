@@ -5,6 +5,7 @@
   "scripts": {
     "build": "bash ./scripts/build.sh",
     "dev": "bash ./scripts/dev.sh",
+    "deploy": "bash ./scripts/deploy.sh",
     "preinstall": "npx only-allow pnpm",
     "lint": "eslint",
     "lint:build": "eslint . --quiet",
