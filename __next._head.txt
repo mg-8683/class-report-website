@@ -1,0 +1,6 @@
+1:"$Sreact.fragment"
+2:I[96118,["/class-report-website/_next/static/chunks/7d0f319660058005.js"],"ViewportBoundary"]
+3:I[96118,["/class-report-website/_next/static/chunks/7d0f319660058005.js"],"MetadataBoundary"]
+4:"$Sreact.suspense"
+5:I[31228,["/class-report-website/_next/static/chunks/7d0f319660058005.js"],"IconMark"]
+0:{"buildId":"GRDHxazphkIRnNEgT2IOG","rsc":["$","$1","h",{"children":[null,["$","$L2",null,{"children":[["$","meta","0",{"charSet":"utf-8"}],["$","meta","1",{"name":"viewport","content":"width=device-width, initial-scale=1"}]]}],["$","div",null,{"hidden":true,"children":["$","$L3",null,{"children":["$","$4",null,{"name":"Next.Metadata","children":[["$","title","0",{"children":"班课阶段报告管理"}],["$","meta","1",{"name":"description","content":"内部教学管理工具 - 教师填写班课阶段报告，管理者导出分析数据"}],["$","link","2",{"rel":"icon","href":"/class-report-website/favicon.ico?favicon.0b3bf435.ico","sizes":"256x256","type":"image/x-icon"}],["$","$L5","3",{}]]}]}]}],null]}],"loading":null,"isPartial":false}
