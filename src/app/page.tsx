@@ -4,9 +4,9 @@ import * as XLSX from "xlsx";
 
 import {
   AppData, CourseData, StudentEvaluation, LessonData,
-  RATING_OPTIONS, AbilityRating, CommonRating,
+  RATING_OPTIONS, AbilityRating, CommonRating, Attendance,
   createDefaultData, createStudentEvaluation, createDefaultCourse,
-  generateId, EXCEL_COLUMNS,
+  generateId, EXCEL_COLUMNS, ATTENDANCE_OPTIONS,
 } from "@/lib/types";
 
 const STORAGE_KEY = "class-report-data";
@@ -30,12 +30,12 @@ function saveData(data: AppData) {
 
 // ========== 小型复用组件 ==========
 
-function RatingSelect({ value, options, onChange }: {
-  value: string; options: readonly string[]; onChange: (v: string) => void;
+function RatingSelect({ value, options, onChange, disabled }: {
+  value: string; options: readonly string[]; onChange: (v: string) => void; disabled?: boolean;
 }) {
   return (
-    <select value={value} onChange={e => onChange(e.target.value)}
-      className="border border-gray-300 rounded px-2 py-1 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-green-400 min-w-[100px]">
+    <select value={value} onChange={e => onChange(e.target.value)} disabled={disabled}
+      className={`border rounded px-2 py-1 text-sm bg-white focus:outline-none focus:ring-1 min-w-[100px] ${disabled ? 'border-gray-200 text-gray-300 cursor-not-allowed' : 'border-gray-300 focus:ring-green-400'}`}>
       {options.map(opt => <option key={opt} value={opt}>{opt}</option>)}
     </select>
   );
@@ -292,12 +292,17 @@ export default function ClassReportPage() {
       lines.push("");
     }
     lines.push(`【${student.name}】`);
-    lines.push(`基础能力反馈：${eval_?.ability || "未填写"}`);
-    lines.push(`笔记：${eval_?.notes || "未填写"}`);
-    lines.push(`专注度：${eval_?.focus || "未填写"}`);
-    lines.push(`逻辑力：${eval_?.logic || "未填写"}`);
-    lines.push(`理解力：${eval_?.comprehension || "未填写"}`);
-    lines.push(`上课互动答题情况：${eval_?.interaction || "暂无"}`);
+    lines.push(`出勤：${eval_?.attendance || "未知"}`);
+    if (eval_?.attendance === '出勤') {
+      lines.push(`基础能力反馈：${eval_?.ability || "未填写"}`);
+      lines.push(`笔记：${eval_?.notes || "未填写"}`);
+      lines.push(`专注度：${eval_?.focus || "未填写"}`);
+      lines.push(`逻辑力：${eval_?.logic || "未填写"}`);
+      lines.push(`理解力：${eval_?.comprehension || "未填写"}`);
+      lines.push(`上课互动答题情况：${eval_?.interaction || "暂无"}`);
+    } else {
+      lines.push(`（${eval_?.attendance || "未出勤"}，无评价数据）`);
+    }
     const text = lines.join("\n");
     navigator.clipboard.writeText(text).then(() => alert("已复制到剪贴板")).catch(() => {
       const ta = document.createElement("textarea");
@@ -321,12 +326,13 @@ export default function ClassReportPage() {
             '课程名称': course.name,
             '课时名称': lesson.name,
             '学员姓名': student.name,
-            '基础能力反馈': ev.ability,
-            '笔记': ev.notes,
-            '专注度': ev.focus,
-            '逻辑力': ev.logic,
-            '理解力': ev.comprehension,
-            '上课互动答题情况': ev.interaction,
+            '出勤': ev.attendance,
+            '基础能力反馈': ev.attendance === '出勤' ? ev.ability : '',
+            '笔记': ev.attendance === '出勤' ? ev.notes : '',
+            '专注度': ev.attendance === '出勤' ? ev.focus : '',
+            '逻辑力': ev.attendance === '出勤' ? ev.logic : '',
+            '理解力': ev.attendance === '出勤' ? ev.comprehension : '',
+            '上课互动答题情况': ev.attendance === '出勤' ? ev.interaction : '',
             '阶段教学内容概要': lesson.contentSummary,
           });
         }
@@ -335,8 +341,8 @@ export default function ClassReportPage() {
     const ws = XLSX.utils.json_to_sheet(rows);
     // 设置列宽
     ws['!cols'] = [
-      { wch: 30 }, { wch: 16 }, { wch: 12 }, { wch: 18 },
-      { wch: 8 }, { wch: 8 }, { wch: 8 }, { wch: 8 },
+      { wch: 30 }, { wch: 16 }, { wch: 12 }, { wch: 8 },
+      { wch: 18 }, { wch: 8 }, { wch: 8 }, { wch: 8 }, { wch: 8 },
       { wch: 40 }, { wch: 50 },
     ];
     const wb = XLSX.utils.book_new();
@@ -404,14 +410,16 @@ export default function ClassReportPage() {
             const evaluations: Record<string, StudentEvaluation> = {};
             for (const row of lData.rows) {
               const sid = row._sid;
+              const attendance = (row['出勤'] || '出勤') as Attendance;
               evaluations[sid] = {
                 studentId: sid,
-                ability: (row['基础能力反馈'] || '一般') as AbilityRating,
-                notes: (row['笔记'] || '一般') as CommonRating,
-                focus: (row['专注度'] || '一般') as CommonRating,
-                logic: (row['逻辑力'] || '一般') as CommonRating,
-                comprehension: (row['理解力'] || '一般') as CommonRating,
-                interaction: (row['上课互动答题情况'] || '').trim(),
+                attendance,
+                ability: (attendance === '出勤' ? (row['基础能力反馈'] || '一般') : '一般') as AbilityRating,
+                notes: (attendance === '出勤' ? (row['笔记'] || '一般') : '一般') as CommonRating,
+                focus: (attendance === '出勤' ? (row['专注度'] || '一般') : '一般') as CommonRating,
+                logic: (attendance === '出勤' ? (row['逻辑力'] || '一般') : '一般') as CommonRating,
+                comprehension: (attendance === '出勤' ? (row['理解力'] || '一般') : '一般') as CommonRating,
+                interaction: (attendance === '出勤' ? (row['上课互动答题情况'] || '').trim() : ''),
               };
             }
             lessons.push({ ...lData.lesson, evaluations });
@@ -621,6 +629,7 @@ export default function ClassReportPage() {
                   <thead>
                     <tr className="bg-gray-50 border-b border-gray-200">
                       <th className="px-3 py-2.5 text-left font-semibold text-gray-600 w-[100px] sticky left-0 bg-gray-50 z-10">姓名</th>
+                      <th className="px-3 py-2.5 text-center font-semibold text-gray-600 w-[80px]">出勤</th>
                       <th className="px-3 py-2.5 text-center font-semibold text-gray-600 w-[150px]">基础能力反馈</th>
                       <th className="px-3 py-2.5 text-center font-semibold text-gray-600 w-[90px]">笔记</th>
                       <th className="px-3 py-2.5 text-center font-semibold text-gray-600 w-[90px]">专注度</th>
@@ -632,38 +641,54 @@ export default function ClassReportPage() {
                   </thead>
                   <tbody>
                     {activeCourse.students.length === 0 ? (
-                      <tr><td colSpan={8} className="px-4 py-8 text-center text-gray-400">暂无学员，请在上方添加学员</td></tr>
+                      <tr><td colSpan={9} className="px-4 py-8 text-center text-gray-400">暂无学员，请在上方添加学员</td></tr>
                     ) : activeCourse.students.map(student => {
                       const eval_ = currentLesson.evaluations[student.id];
                       if (!eval_) return null;
+                      const isAbsent = eval_.attendance !== '出勤';
                       return (
                         <tr key={student.id} className="border-b border-gray-100 hover:bg-gray-50/50">
                           <td className="px-3 py-2 font-medium text-gray-800 sticky left-0 bg-white z-10">{student.name}</td>
                           <td className="px-3 py-2 text-center">
-                            <RatingSelect value={eval_.ability} options={RATING_OPTIONS.ability}
+                            <select value={eval_.attendance}
+                              onChange={e => updateEvaluation(student.id, "attendance", e.target.value as Attendance)}
+                              className={`text-xs border rounded px-1 py-1 focus:outline-none focus:ring-1 ${
+                                eval_.attendance === '出勤' ? 'border-gray-200 focus:ring-green-400 text-gray-700' :
+                                eval_.attendance === '请假' ? 'border-yellow-300 focus:ring-yellow-400 text-yellow-600 bg-yellow-50' :
+                                'border-red-300 focus:ring-red-400 text-red-600 bg-red-50'
+                              }`}>
+                              {ATTENDANCE_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
+                            </select>
+                          </td>
+                          <td className="px-3 py-2 text-center">
+                            <RatingSelect value={eval_.ability} options={RATING_OPTIONS.ability} disabled={isAbsent}
                               onChange={v => updateEvaluation(student.id, "ability", v as AbilityRating)} />
                           </td>
                           <td className="px-3 py-2 text-center">
-                            <RatingSelect value={eval_.notes} options={RATING_OPTIONS.common}
+                            <RatingSelect value={eval_.notes} options={RATING_OPTIONS.common} disabled={isAbsent}
                               onChange={v => updateEvaluation(student.id, "notes", v as CommonRating)} />
                           </td>
                           <td className="px-3 py-2 text-center">
-                            <RatingSelect value={eval_.focus} options={RATING_OPTIONS.common}
+                            <RatingSelect value={eval_.focus} options={RATING_OPTIONS.common} disabled={isAbsent}
                               onChange={v => updateEvaluation(student.id, "focus", v as CommonRating)} />
                           </td>
                           <td className="px-3 py-2 text-center">
-                            <RatingSelect value={eval_.logic} options={RATING_OPTIONS.common}
+                            <RatingSelect value={eval_.logic} options={RATING_OPTIONS.common} disabled={isAbsent}
                               onChange={v => updateEvaluation(student.id, "logic", v as CommonRating)} />
                           </td>
                           <td className="px-3 py-2 text-center">
-                            <RatingSelect value={eval_.comprehension} options={RATING_OPTIONS.common}
+                            <RatingSelect value={eval_.comprehension} options={RATING_OPTIONS.common} disabled={isAbsent}
                               onChange={v => updateEvaluation(student.id, "comprehension", v as CommonRating)} />
                           </td>
                           <td className="px-3 py-2">
-                            <input value={eval_.interaction}
-                              onChange={e => updateEvaluation(student.id, "interaction", e.target.value)}
-                              placeholder="输入互动情况..."
-                              className="w-full border border-gray-200 rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-green-400" />
+                            {isAbsent ? (
+                              <span className="text-gray-300 text-sm">—</span>
+                            ) : (
+                              <input value={eval_.interaction}
+                                onChange={e => updateEvaluation(student.id, "interaction", e.target.value)}
+                                placeholder="输入互动情况..."
+                                className="w-full border border-gray-200 rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-green-400" />
+                            )}
                           </td>
                           <td className="px-3 py-2 text-center">
                             <button onClick={() => copyStudentRow(student.id)}

@@ -7,9 +7,12 @@ export const RATING_OPTIONS = {
 export type AbilityRating = (typeof RATING_OPTIONS.ability)[number];
 export type CommonRating = (typeof RATING_OPTIONS.common)[number];
 
+export type Attendance = '出勤' | '请假' | '旷课';
+
 // 学员评价数据
 export interface StudentEvaluation {
   studentId: string;
+  attendance: Attendance;
   ability: AbilityRating;
   notes: CommonRating;
   focus: CommonRating;
@@ -51,6 +54,7 @@ export interface AppData {
 export function createStudentEvaluation(studentId: string): StudentEvaluation {
   return {
     studentId,
+    attendance: '出勤',
     ability: '一般',
     notes: '一般',
     focus: '一般',
@@ -92,10 +96,14 @@ export function generateId(): string {
 }
 
 // Excel 导出列定义
+// 出勤选项
+export const ATTENDANCE_OPTIONS: Attendance[] = ['出勤', '请假', '旷课'];
+
 export const EXCEL_COLUMNS = [
   { key: 'courseName', label: '课程名称' },
   { key: 'lessonName', label: '课时名称' },
   { key: 'studentName', label: '学员姓名' },
+  { key: 'attendance', label: '出勤' },
   { key: 'ability', label: '基础能力反馈' },
   { key: 'notes', label: '笔记' },
   { key: 'focus', label: '专注度' },
