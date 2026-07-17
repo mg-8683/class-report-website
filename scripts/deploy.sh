@@ -17,7 +17,7 @@ git commit -m "Deploy to GitHub Pages - $(date '+%Y-%m-%d %H:%M:%S')"
 git branch -M gh-pages
 
 # 推送到远程 gh-pages 分支
-git remote add origin https://github.com/shelley-98683/class-report-website.git
+git remote add origin https://github.com/mg-8683/class-report-website.git
 git push -f origin gh-pages
 
 # 清理
@@ -25,4 +25,4 @@ cd ..
 rm -rf out/.git
 
 echo "✅ 部署完成！"
-echo "🌐 访问地址：https://shelley-98683.github.io/class-report-website/"
+echo "🌐 访问地址：https://mg-8683.github.io/class-report-website/"
